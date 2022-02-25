@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Image;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -18,7 +19,6 @@ class ProductController extends Controller {
                 'index',
                 'productList',
                 'addproduct',
-                'productImages',
                 'saveImages',
                 'getproduct',
                 'updateproduct',
@@ -36,8 +36,8 @@ class ProductController extends Controller {
                 'getTerCat',
                 'updateTerCat',
                 'deleteTerCat',
-                'addMassProduct',
-                'samp', 'sample'
+                'addMassProducts',
+                'sample'
             ],
         ] );
     }
@@ -90,24 +90,29 @@ class ProductController extends Controller {
             'image' => 'required|image|mimes:jpg,png,jpeg,gif,svg|max:2048',
 
         ] );
-        $name = $request->file( 'image' )->getClientOriginalName();
-        $path = $request->file( 'image' )->store( 'public/images' );
+        if ( $validatedData ) {
+            $name = $request->file( 'image' )->getClientOriginalName();
+            $path = $request->file( 'image' )->store( 'public/images' );
 
-        $save = new Photo;
-        $save->name = $name;
-        $save->path = $path;
-        $save->save();
-        $image = images::create( [
-            'product_id' => $request->product_id,
-            'image_name' => $name,
-            'image_path' => $path,
-            'created_at' => carbon::now(),
-            'updated_at' => carbon::now(),
-        ] );
+            $save = new Photo;
+            $save->name = $name;
+            $save->path = $path;
+            $save->save();
+            $image = Image::create( [
+                'plant_id' => $request->plant_id,
+                'image_name' => $name,
+                'image_path' => $path,
+                'created_at' => carbon::now(),
+                'updated_at' => carbon::now(),
+            ] );
+        } else {
+            return response()->json( [ 'status' => 1, 'message' => 'invalid image size' ], 406 );
+        }
 
         // return redirect( 'upload-image' )->with( 'status', 'Image Has been uploaded' );
         return response()->json( [ 'status' => 1, 'image_details' => $image ], 200 );
     }
+
     // public function productImages( Request $request )
     // {
     //     $check = productImages::create( [
@@ -324,70 +329,13 @@ class ProductController extends Controller {
         );
     }
 
-    public function addMassProduct( Request $request ) {
+    public function addMassProducts( Request $request ) {
         $validator = Validator::make( $request->all(), [
+            // 'product_id' => 'required|string',
             'product_name' => 'required|string',
             'product_description' => 'required|string',
-            'product_cat_id' => 'required|integer',
-            'product_subCat_id' => 'required|int',
-            'product_Tertiary_id' => 'required|string',
-            'product_purchase_price' => 'integer',
-            'product_quantity' => 'integer',
-            'product_profit' => 'integer',
-            'product_offer' => 'required|integer',
-            'product_customer_price' => 'required|integer',
-        ] );
-        if ( $validator->fails() ) {
-            return response()->json( [ 'message' => $request->errors() ], 202 );
-        }
-        // foreach ( $products as $product ) {
-
-        if ( $product_quantity > 1 ) {
-
-            for ( $i = 1; $i <= $product_quantity; $i++ ) {
-                $check = Products::create( [
-                    'product_name' => $request->product_name,
-                    'product_description' => $request->product_description,
-                    'product_cat_id' => $request->product_cat_id,
-                    'product_subCat_id' => $request->product_subCat_id,
-                    'product_Tertiary_id' => $request->product_Tertiary_id,
-                    'product_purchase_price' => $request->product_purchase_price,
-                    'product_quantity' => $request->product_quantity,
-                    'product_profit' => $request->product_profit,
-                    'product_offer' => $request->product_offer,
-                    'product_customer_price' => $request->product_customer_price,
-                    'created_at' => Carbon::now(),
-                ] );
-            }
-            return $this->resp( $check, "product's added Successfully" );
-        } else {
-            $check = Products::create( [
-                'product_name' => $request->product_name,
-                'product_description' => $request->product_description,
-                'product_cat_id' => $request->product_cat_id,
-                'product_subCat_id' => $request->product_subCat_id,
-                'product_Tertiary_id' => $request->product_Tertiary_id,
-                'product_purchase_price' => $request->product_purchase_price,
-                'product_quantity' => $request->product_quantity,
-                'product_profit' => $request->product_profit,
-                'product_offer' => $request->product_offer,
-                'product_customer_price' => $request->product_customer_price,
-                'created_at' => Carbon::now(),
-            ] );
-        }
-
-        return $this->resp( $check, "product's added Successfully" );
-
-    }
-
-    // }
-
-    public function samp( Request $request ) {
-        $validator = Validator::make( $request->all(), [
-            'product_name' => 'required|string',
-            'product_description' => 'required|string',
-            'plant_id' => 'required|integer',
-            'product_cat_id' => 'required|integer',
+            // 'plant_id' => 'required|int',
+            'product_cat_id' => 'required|int',
             'product_subCat_id' => 'required|int',
             'product_Tertiary_id' => 'required|string',
             'product_purchase_price' => 'required|int',
@@ -396,71 +344,78 @@ class ProductController extends Controller {
             'product_offer' => 'required|int',
             'product_customer_price' => 'required|int',
 
-        ]);
+        ] );
         if ( $validator->fails() ) {
-            return response()->json( $validator->errors()->toJson(), 202);
+            return response()->json( $validator->errors()->toJson(), 202 );
         }
-        $product_quantities = $request->product_quantity;
-        $plantId = $request->product_name[0];
-        // $conCat =
 
-        for ( $i = 1; $i <= $product_quantities; $i++ ) {
+        $product_quantity = $request->product_quantity;
 
-            $last_plant_id = DB::table( 'Products' )->latest( 'plant_id' )->first();
-            $new_plant_id = ( $last_plant_id->plant_id + 1 );
-            if ( $product_quantities > 0 ) {
-                $products = Product::create( [
-                    'plant_id' => $new_plant_id,
-                    'product_id' => "sample",
+        $input_plant_id = $request->plant_id;
+        $frontName = $request->product_name[ 0 ] . $request->product_name[ 1 ] . $request->product_name[ 2 ];
+        $plantId = $frontName .  '-' . $input_plant_id;
+
+        for ( $quantity = 1; $quantity <= $product_quantity; $quantity++ ) {
+
+            $last_product_id = DB::table( 'products' )->latest( 'product_id' )->first();
+            $product_id = $request->product_id;
+
+            if ( $last_product_id == null ) {
+                $product_id = intval( substr( ( $product_id ), 1 ) );
+                //retrieve numeric value of 'string001' ( 1 )
+                $product_id++;
+                //increment
+                if ( mb_strlen( $product_id ) == 1 ) {
+                    $zero_string = '0000';
+                } elseif ( mb_strlen( $product_id ) == 2 ) {
+                    $zero_string = '000';
+                } elseif ( mb_strlen( $product_id ) == 2 ) {
+                    $zero_string = '00';
+                } elseif ( mb_strlen( $product_id ) == 2 ) {
+                    $zero_string = '0';
+                } else {
+                    $zero_string = '';
+                }
+                $updated_product_id = $frontName.'-'.$zero_string.$product_id;
+                $final_product_id = ( $updated_product_id );
+            } else {
+                $last_product_id = DB::table( 'products' )->latest( 'product_id' )->first();
+                $new_product_id = $last_product_id->product_id;
+                $final_product_id = ( ++$new_product_id );
+            }
+
+            if ( $product_quantity != null ) {
+
+                $check = Product::create( [
+                    'product_id' => $final_product_id,
                     'product_name' => $request->product_name,
                     'product_description' => $request->product_description,
+                    'plant_id' => $plantId,
                     'product_cat_id' => $request->product_cat_id,
                     'product_subCat_id' => $request->product_subCat_id,
-                    'product_Tertiary_id' => $request->product_Tertiary_id,
+                    'product_tertiary_id' => $request->product_Tertiary_id,
                     'product_purchase_price' => $request->product_purchase_price,
-                    'product_status' => $request->product_status,
+                    'product_quantity' => $request->product_quantity,
                     'product_profit' => $request->product_profit,
                     'product_offer' => $request->product_offer,
                     'product_customer_price' => $request->product_customer_price,
                     'created_at' => Carbon::now(),
                 ] );
-
             }
-
-            // foreach ( $products as $proucts ) {
-            //     $last_plant_id = DB::table( 'Products' )->latest( 'plant_id' )->first();
-            //     $new_plant_id = ( $last_plant_id->id + 1 );
-            //     $products = Product::create( [
-
-            //         'plant_id' => $new_plant_id,
-            // ] );
-            // }
-
         }
-        if ( $products ) {
-            return response()->json(
-                [
-                    'status' => 1,
-                    'message' => 'products added succeffully ',
-                    'total_quantity' => $product_quantities,
-                    'products' =>  $products,
-                    'sample'=>$plantId,
 
-                ],
-                200
-            );
-        }
         return response()->json(
             [
-                'status' => 0,
-                'message' => 'Error, try again later!',
+                'status' => 1,
+                'added_products' => $check,
+                'message' => 'product details updated Successfully',
             ],
-            201
+            200
         );
     }
 
     public function sample() {
-        $user = "sample";
-        return json_encode( $user[0] );
+        $user = 'sample';
+        return json_encode( $user[ 0 ] );
     }
 }

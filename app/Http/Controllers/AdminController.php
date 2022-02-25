@@ -69,7 +69,7 @@ class AdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|between:2,100',
-            // 'email' => 'required|string|email|max:100|unique:users',
+            'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
             // 'user_type' => 'required|string',
         ]);
@@ -79,11 +79,11 @@ class AdminController extends Controller
 
         $user = User::create([
             'name' => $request['name'],
-            // 'email' => $request['email'],
+            'email' => $request['email'],
             'user_type' => $request['user_type'],
             'password' => Hash::make($request['password']),
         ]);
-        $user->attachRole('customer');
+        $user->attachRole('administrator');
 
         return response()->json(
             [

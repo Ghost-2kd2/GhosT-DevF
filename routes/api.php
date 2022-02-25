@@ -101,7 +101,8 @@ Route::group([
     Route::post('/updateTerCat', [ProductController::class, 'updateTerCat']);
     Route::post('/deleteTerCat', [ProductController::class, 'deleteTerCat']);
     //.............................................................................//
-    Route::post('/addMassProduct', [ProductController::class, 'addMassProduct']);
+    Route::post('/addMassProducts', [ProductController::class, 'addMassProducts']);
+    Route::get('/saveImages', [ProductController::class, 'saveImages']);
     Route::post('/samp', [ProductController::class, 'samp']);
     Route::post('/sample', [ProductController::class, 'sample']);
 
